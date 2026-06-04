@@ -1,0 +1,12 @@
+{
+  "name": "ruilong-hotel-quote",
+  "version": "1.0.0",
+  "description": "酒店图片报价单模板（HTML 网页 + 一键导出 PDF）",
+  "type": "module",
+  "scripts": {
+    "pdf": "node build_pdf.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^29.1.1"
+  }
+}

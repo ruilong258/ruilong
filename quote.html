@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>酒店报价单 / Hotel Quotation</title>
+<style>
+  :root {
+    --brand: #1a6fc4;
+    --brand-dark: #0b4f96;
+    --accent: #febb02;     /* Booking-style yellow */
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --bg: #f3f5f8;
+    --ok: #008009;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ===== Toolbar (screen only) ===== */
+  .toolbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; gap: 10px; justify-content: flex-end; align-items: center;
+    padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line);
+  }
+  .toolbar .hint { margin-right: auto; color: var(--muted); font-size: 13px; }
+  .btn {
+    border: 1px solid var(--brand); background: var(--brand); color: #fff;
+    padding: 8px 16px; border-radius: 999px; font-size: 14px; cursor: pointer;
+    font-weight: 600;
+  }
+  .btn.secondary { background: #fff; color: var(--brand); }
+
+  /* ===== Sheet ===== */
+  .sheet {
+    width: 820px; max-width: calc(100% - 32px);
+    margin: 24px auto; background: #fff;
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 10px 40px rgba(15, 50, 90, .12);
+  }
+
+  /* Header */
+  .head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; padding: 22px 28px;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+    color: #fff;
+  }
+  .agency { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 52px; height: 52px; border-radius: 12px; background: #fff;
+    display: grid; place-items: center; color: var(--brand);
+    font-weight: 800; font-size: 22px; flex: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,.15);
+  }
+  .agency h1 { margin: 0; font-size: 18px; letter-spacing: .3px; }
+  .agency .sub { font-size: 12.5px; opacity: .9; }
+  .doc-meta { text-align: right; font-size: 12.5px; }
+  .doc-meta .title { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+  .doc-meta .row { opacity: .92; }
+
+  /* Gallery */
+  .gallery {
+    display: grid; grid-template-columns: 2fr 1fr 1fr; grid-auto-rows: 130px;
+    gap: 4px; background: #000;
+  }
+  .gallery .g-main { grid-row: span 2; grid-column: 1; }
+  .gallery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery .more {
+    position: relative;
+  }
+  .gallery .more .count {
+    position: absolute; inset: 0; background: rgba(0,0,0,.45);
+    color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 700;
+  }
+
+  /* Body */
+  .body { padding: 22px 28px; }
+  .hotel-line { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .hotel-name { margin: 0; font-size: 22px; }
+  .stars { color: var(--accent); font-size: 16px; letter-spacing: 2px; }
+  .addr { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+  .addr a { color: var(--brand); text-decoration: none; }
+  .score-box { text-align: center; flex: none; }
+  .score {
+    background: var(--brand-dark); color: #fff; font-weight: 800;
+    padding: 7px 11px; border-radius: 10px 10px 10px 0; font-size: 16px; display: inline-block;
+  }
+  .score-box .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .score-box .label b { color: var(--ink); }
+
+  .tagline { margin: 14px 0 0; color: #374151; font-size: 14px; }
+
+  .section-title {
+    margin: 22px 0 10px; font-size: 15px; font-weight: 700; color: var(--brand-dark);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before { content: ""; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+  /* Stay facts */
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .fact { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .fact .k { font-size: 12px; color: var(--muted); }
+  .fact .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+  /* Amenities */
+  .amen { display: flex; flex-wrap: wrap; gap: 8px; }
+  .amen span {
+    font-size: 12.5px; background: #eef5fc; color: var(--brand-dark);
+    border: 1px solid #d6e7f7; padding: 4px 10px; border-radius: 999px;
+  }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    background: var(--brand); color: #fff; text-align: left; padding: 10px 12px; font-weight: 600;
+  }
+  thead th.num, tbody td.num { text-align: right; }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #fafbfd; }
+  .room-name { font-weight: 700; }
+  .room-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+  /* Totals */
+  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
+  .totals table { width: auto; min-width: 320px; }
+  .totals td { padding: 7px 12px; border: none; font-size: 14px; }
+  .totals .lbl { color: var(--muted); }
+  .totals .amt { text-align: right; font-weight: 600; }
+  .totals .grand td { border-top: 2px solid var(--ink); font-size: 18px; font-weight: 800; padding-top: 12px; }
+  .totals .grand .amt { color: var(--brand-dark); }
+
+  /* Two-col notes */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  ul.notes { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: #374151; }
+  ul.notes li { margin: 4px 0; }
+  ul.inc li::marker { color: var(--ok); }
+  ul.exc li::marker { color: #c0392b; }
+
+  /* Footer */
+  .foot {
+    margin-top: 8px; padding: 20px 28px; background: var(--bg);
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .foot .contact { font-size: 13px; color: #374151; }
+  .foot .contact b { color: var(--ink); }
+  .foot .cta { text-align: right; font-size: 12.5px; color: var(--muted); }
+  .foot .cta .price { font-size: 22px; font-weight: 800; color: var(--brand-dark); }
+  .disclaimer { padding: 12px 28px 26px; font-size: 11px; color: #9aa3af; }
+
+  @media (max-width: 680px) {
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+    .gallery { grid-template-columns: 1fr 1fr; grid-auto-rows: 110px; }
+    .gallery .g-main { grid-column: span 2; }
+  }
+
+  @media print {
+    .toolbar { display: none !important; }
+    body { background: #fff; }
+    .sheet { width: auto; max-width: none; margin: 0; box-shadow: none; border-radius: 0; }
+    @page { size: A4; margin: 12mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Screen-only toolbar ===== -->
+<div class="toolbar">
+  <span class="hint">编辑本文件顶部的 <code>QUOTE_DATA</code> 即可生成你自己的报价单 · Edit <code>QUOTE_DATA</code> below to fill in your hotel</span>
+  <button class="btn secondary" onclick="window.print()">打印 / 存为 PDF</button>
+</div>
+
+<div class="sheet" id="sheet"><!-- rendered by JS --></div>
+
+<script>
+/* =====================================================================
+   报价单数据 · QUOTE DATA
+   只需修改下面这个对象，整张报价单会自动更新。
+   Edit ONLY this object to produce a new quotation.
+   ===================================================================== */
+const QUOTE_DATA = {
+  // —— 旅行社 / 公司抬头 ——
+  agency: {
+    name: "瑞龙国际旅行社",
+    nameEn: "Ruilong Travel",
+    initials: "RL",
+    tagline: "为您甄选 · 全球精品住宿",
+    contactPerson: "李永全",
+    phone: "+86 138-0000-0000",
+    email: "liyongquan258@gmail.com",
+    wechat: "ruilong258"
+  },
+
+  // —— 报价单元信息 ——
+  meta: {
+    quoteNo: "RL-2026-0604",
+    date: "2026-06-04",
+    validUntil: "2026-06-18",   // 报价有效期
+    currency: "CNY",
+    currencySymbol: "¥"
+  },
+
+  // —— 酒店信息 ——
+  hotel: {
+    name: "示例海景度假酒店",
+    nameEn: "Sample Seaview Resort",
+    stars: 5,                    // 0–5
+    address: "示例城市 · 海滨大道 1 号",
+    mapUrl: "https://www.booking.com/Share-vzuOvX5",  // 原始 Booking 链接
+    score: 9.2,
+    scoreLabel: "好极了",
+    reviews: 1284,
+    tagline: "坐拥私人沙滩与无边泳池，步行 5 分钟可达地铁与商圈，含双人自助早餐。",
+    // 图片：替换成你自己的图片地址（本地路径或网址均可）。第一张为主图。
+    images: [
+      "https://placehold.co/800x600/1a6fc4/ffffff?text=Hotel+Main",
+      "https://placehold.co/400x300/0b4f96/ffffff?text=Room",
+      "https://placehold.co/400x300/2a86d6/ffffff?text=Pool",
+      "https://placehold.co/400x300/3a7bbf/ffffff?text=Lobby",
+      "https://placehold.co/400x300/0e5fa8/ffffff?text=View"
+    ],
+    amenities: ["免费 WiFi", "无边泳池", "私人沙滩", "健身房", "免费停车", "24h 前台", "含早餐", "可携宠物"]
+  },
+
+  // —— 入住信息 ——
+  stay: {
+    checkIn: "2026-07-10",
+    checkOut: "2026-07-13",
+    nights: 3,
+    guests: "2 成人",
+    rooms: 1
+  },
+
+  // —— 房型 / 价格明细（每行一个房型）——
+  rooms: [
+    { name: "豪华海景大床房", meta: "约 45㎡ · 1 张特大床 · 含双早 · 免费取消", nights: 3, qty: 1, pricePerNight: 1280 },
+    { name: "行政套房（升级备选）", meta: "约 70㎡ · 1 张特大床 · 行政酒廊 · 含双早", nights: 3, qty: 1, pricePerNight: 2180 }
+  ],
+
+  // —— 费用汇总 ——
+  pricing: {
+    taxRate: 0.06,        // 税费/服务费比例（如 6%）；设为 0 则不显示
+    discount: 200,        // 优惠金额（直减）；设为 0 则不显示
+    note: "以上为单房型总价，请选择其一；最终价格以确认订单为准。"
+  },
+
+  // —— 费用说明 ——
+  inclusions: ["每日双人自助早餐", "免费高速 WiFi", "免费停车位 1 个", "酒店泳池与健身房", "全程客服支持"],
+  exclusions: ["往返机票 / 交通", "旅游保险", "个人消费（迷你吧、SPA 等）", "城市税（如目的地另行征收）"],
+
+  // —— 备注 / 条款 ——
+  terms: [
+    "本报价基于上述入住日期与房量，库存与价格可能随时变动，以实时确认为准。",
+    "入住 / 退房时间：14:00 后入住，12:00 前退房。",
+    "如需改期或取消，请于入住前 3 天联系我们，逾期可能产生费用。"
+  ]
+};
+
+/* =====================================================================
+   渲染逻辑 · Renderer（一般无需修改）
+   ===================================================================== */
+(function render(d) {
+  const sym = d.meta.currencySymbol;
+  const money = n => sym + Number(n).toLocaleString("zh-CN");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+
+  // —— gallery ——
+  const imgs = d.hotel.images.slice(0, 5);
+  const fallback = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#dbe4ef"/><text x="50%" y="50%" fill="#7b8aa0" font-family="sans-serif" font-size="20" text-anchor="middle" dominant-baseline="middle">图片 Image</text></svg>'
+  );
+  const onerr = `this.onerror=null;this.src='${fallback}'`;
+  const galleryCells = imgs.map((src, i) => {
+    const cls = i === 0 ? "g-main" : "";
+    const extra = d.hotel.images.length > 5 && i === 4;
+    if (extra) {
+      return `<div class="more">
+        <img class="${cls}" src="${esc(src)}" onerror="${onerr}" alt="">
+        <span class="count">+${d.hotel.images.length - 5}</span></div>`;
+    }
+    return `<img class="${cls}" src="${esc(src)}" onerror="${onerr}" alt="">`;
+  }).join("");
+
+  // —— stars ——
+  const stars = "★".repeat(d.hotel.stars) + "☆".repeat(Math.max(0, 5 - d.hotel.stars));
+
+  // —— amenities ——
+  const amen = d.hotel.amenities.map(a => `<span>${esc(a)}</span>`).join("");
+
+  // —— rooms table ——
+  const rowsHtml = d.rooms.map(r => {
+    const total = r.pricePerNight * r.nights * r.qty;
+    return `<tr>
+      <td><div class="room-name">${esc(r.name)}</div><div class="room-meta">${esc(r.meta)}</div></td>
+      <td class="num">${money(r.pricePerNight)}</td>
+      <td class="num">${r.nights}</td>
+      <td class="num">${r.qty}</td>
+      <td class="num">${money(total)}</td>
+    </tr>`;
+  }).join("");
+
+  // —— totals: base = first room option (主推房型) ——
+  const base = d.rooms.length ? d.rooms[0].pricePerNight * d.rooms[0].nights * d.rooms[0].qty : 0;
+  const tax = Math.round(base * (d.pricing.taxRate || 0));
+  const discount = d.pricing.discount || 0;
+  const grand = base + tax - discount;
+
+  const totalRows = [];
+  totalRows.push(`<tr><td class="lbl">小计 Subtotal（主推房型）</td><td class="amt">${money(base)}</td></tr>`);
+  if (d.pricing.taxRate) totalRows.push(`<tr><td class="lbl">税费 / 服务费 (${Math.round(d.pricing.taxRate*100)}%)</td><td class="amt">${money(tax)}</td></tr>`);
+  if (discount) totalRows.push(`<tr><td class="lbl">优惠 Discount</td><td class="amt">- ${money(discount)}</td></tr>`);
+  totalRows.push(`<tr class="grand"><td>合计 TOTAL</td><td class="amt">${money(grand)}</td></tr>`);
+
+  const inc = d.inclusions.map(x => `<li>${esc(x)}</li>`).join("");
+  const exc = d.exclusions.map(x => `<li>${esc(x)}</li>`).join("");
+  const terms = d.terms.map(x => `<li>${esc(x)}</li>`).join("");
+
+  document.getElementById("sheet").innerHTML = `
+    <div class="head">
+      <div class="agency">
+        <div class="logo">${esc(d.agency.initials)}</div>
+        <div>
+          <h1>${esc(d.agency.name)} <span style="font-weight:400;opacity:.85;font-size:13px">${esc(d.agency.nameEn)}</span></h1>
+          <div class="sub">${esc(d.agency.tagline)}</div>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <div class="title">报价单</div>
+        <div class="row">QUOTATION</div>
+        <div class="row">编号 No. ${esc(d.meta.quoteNo)}</div>
+        <div class="row">日期 ${esc(d.meta.date)}</div>
+        <div class="row">有效期至 ${esc(d.meta.validUntil)}</div>
+      </div>
+    </div>
+
+    <div class="gallery">${galleryCells}</div>
+
+    <div class="body">
+      <div class="hotel-line">
+        <div>
+          <h2 class="hotel-name">${esc(d.hotel.name)} <span class="stars">${stars}</span></h2>
+          <div style="color:var(--muted);font-size:13px">${esc(d.hotel.nameEn)}</div>
+          <div class="addr">📍 ${esc(d.hotel.address)} · <a href="${esc(d.hotel.mapUrl)}" target="_blank" rel="noopener">查看 Booking 详情</a></div>
+        </div>
+        <div class="score-box">
+          <div class="score">${d.hotel.score}</div>
+          <div class="label"><b>${esc(d.hotel.scoreLabel)}</b><br>${d.hotel.reviews} 条评价</div>
+        </div>
+      </div>
+      <p class="tagline">${esc(d.hotel.tagline)}</p>
+
+      <div class="section-title">入住信息 · Stay</div>
+      <div class="facts">
+        <div class="fact"><div class="k">入住 Check-in</div><div class="v">${esc(d.stay.checkIn)}</div></div>
+        <div class="fact"><div class="k">退房 Check-out</div><div class="v">${esc(d.stay.checkOut)}</div></div>
+        <div class="fact"><div class="k">晚数 Nights</div><div class="v">${d.stay.nights} 晚</div></div>
+        <div class="fact"><div class="k">入住人 / 房量</div><div class="v">${esc(d.stay.guests)} · ${d.stay.rooms} 间</div></div>
+      </div>
+
+      <div class="section-title">酒店设施 · Amenities</div>
+      <div class="amen">${amen}</div>
+
+      <div class="section-title">房型与价格 · Rooms &amp; Rates</div>
+      <table>
+        <thead><tr>
+          <th>房型 Room</th>
+          <th class="num">每晚 / 间</th>
+          <th class="num">晚</th>
+          <th class="num">间</th>
+          <th class="num">小计</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+
+      <div class="totals"><table>${totalRows.join("")}</table></div>
+      ${d.pricing.note ? `<div style="text-align:right;color:var(--muted);font-size:12px;margin-top:4px">${esc(d.pricing.note)}</div>` : ""}
+
+      <div class="cols">
+        <div>
+          <div class="section-title">费用包含 · Included</div>
+          <ul class="notes inc">${inc}</ul>
+        </div>
+        <div>
+          <div class="section-title">费用不含 · Excluded</div>
+          <ul class="notes exc">${exc}</ul>
+        </div>
+      </div>
+
+      <div class="section-title">预订条款 · Terms</div>
+      <ul class="notes">${terms}</ul>
+    </div>
+
+    <div class="foot">
+      <div class="contact">
+        <b>${esc(d.agency.contactPerson)}</b>　顾问<br>
+        📞 ${esc(d.agency.phone)}　✉️ ${esc(d.agency.email)}<br>
+        微信 WeChat: ${esc(d.agency.wechat)}
+      </div>
+      <div class="cta">
+        参考总价（主推房型）<br>
+        <span class="price">${money(grand)}</span> <span style="font-size:12px">${esc(d.meta.currency)}</span>
+      </div>
+    </div>
+    <div class="disclaimer">
+      本报价单由 ${esc(d.agency.name)} 提供，仅供参考。房态与价格以最终预订确认为准。
+      This quotation is for reference only; availability and rates are confirmed at the time of booking.
+    </div>
+  `;
+})(QUOTE_DATA);
+</script>
+</body>
+</html>
