@@ -1,0 +1,24 @@
+{
+  "site": "sc-domain:ruilongtravel.com",
+  "brandTerms": ["ruilong", "瑞龙"],
+  "thresholds": {
+    "almostThere": { "minPosition": 3, "maxPosition": 20, "minImpressions": 50 },
+    "noClicks": { "minImpressions": 500, "maxCtr": 0.005 },
+    "decaying": { "dropPct": 0.3, "minPrevClicks": 10 },
+    "aiMode": { "minWords": 7, "minCjkChars": 15 },
+    "leak": { "minClicks": 100, "maxConversions": 0 },
+    "gold": { "minConversionRate": 0.05, "minConversions": 2 }
+  },
+  "pageIntent": [
+    { "pattern": "/(tours?|trips?|packages?|cruises?)/", "intent": "transactional" },
+    { "pattern": "/(visa|price|quote|pricing)/", "intent": "commercial" },
+    { "pattern": "/(compare|vs)/", "intent": "comparison" },
+    { "pattern": "/(blog|guides?|news)/", "intent": "informational" }
+  ],
+  "queryIntent": [
+    { "pattern": "(\\bvs\\b|versus|compare|对比|比较|哪个好|还是)", "intent": "comparison" },
+    { "pattern": "(price|cost|how much|cheap|多少钱|价格|费用|报价|预算)", "intent": "commercial" },
+    { "pattern": "(book|booking|tour|package|预订|报名|跟团|团购|包团)", "intent": "transactional" },
+    { "pattern": "(how|what|when|why|guide|tips|攻略|怎么|什么|几月|注意)", "intent": "informational" }
+  ]
+}
