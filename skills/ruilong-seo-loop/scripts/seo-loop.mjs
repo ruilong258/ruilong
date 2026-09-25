@@ -6,6 +6,7 @@
 //   GSC_SERVICE_ACCOUNT=key.json node seo-loop/seo-loop.mjs --api --dir ./data
 //                                                        # 直接调 Search Console API 拉数据，转化数据仍读 CSV
 //
+//   加 --out <目录> 可指定报告输出位置（--sample 默认输出到当前目录）
 // 输出：<dir>/report.md（给人看 / 给 Claude 判断）和 <dir>/report.json（给程序用）
 
 import fs from "node:fs";
@@ -24,8 +25,24 @@ const opt = (name, fallback) => {
 const config = JSON.parse(fs.readFileSync(opt("config", path.join(HERE, "config.json")), "utf8"));
 const T = config.thresholds;
 const dir = flag("sample") ? path.join(HERE, "sample") : path.resolve(opt("dir", "."));
+const outDir = path.resolve(opt("out", flag("sample") ? "." : dir));
 
 // ---------- CSV ----------
+
+// Search Console / GA4 中文界面导出的列名 → 统一列名
+const HEADER_ALIASES = {
+  "热门查询": "query", "查询": "query", "top queries": "query",
+  "网页": "page", "热门网页": "page", "页面": "page", "top pages": "page",
+  "点击次数": "clicks", "点击": "clicks",
+  "展示": "impressions", "展示次数": "impressions",
+  "点击率": "ctr",
+  "排名": "position", "平均排名": "position",
+  "着陆页": "landing_page", "着陆页 + 查询字符串": "landing_page",
+  "landing page": "landing_page", "landing page + query string": "landing_page", "first_landing_page": "landing_page",
+  "会话": "sessions", "会话数": "sessions",
+  "关键事件": "conversions", "key events": "conversions", "转化": "conversions", "询价": "conversions",
+  "目标词": "target_query",
+};
 
 function parseCsv(text) {
   const rows = [];
@@ -47,8 +64,11 @@ function parseCsv(text) {
   }
   row.push(cell);
   if (row.some((v) => v !== "")) rows.push(row);
-  const [header, ...body] = rows;
-  const keys = header.map((h) => h.trim().replace(/^﻿/, "").toLowerCase());
+  const [header = [], ...body] = rows;
+  const keys = header.map((h) => {
+    const k = h.trim().replace(/^\uFEFF/, "").toLowerCase();
+    return HEADER_ALIASES[k] ?? k;
+  });
   return body.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] ?? "").trim()])));
 }
 
@@ -220,27 +240,31 @@ async function main() {
   const pages = new Set([...cur.keys(), ...convByPage.keys()]);
   const funnel = [...pages].map((p) => {
     const g = cur.get(p) || { clicks: 0, impressions: 0 };
-    const c = convByPage.get(p) || { sessions: 0, conversions: 0 };
+    const c = convByPage.get(p);
+    if (!c) {
+      // 没有转化数据 ≠ 没有询价
+      return { page: p, clicks: g.clicks, impressions: g.impressions, sessions: null, conversions: null, conversionRate: null, verdict: conversions.length ? "无转化数据" : "" };
+    }
     const rate = c.sessions ? c.conversions / c.sessions : 0;
     let verdict = "";
     if (p === "/") verdict = "首页（多为品牌流量，不参与判断）";
     else if (g.clicks >= T.leak.minClicks && c.conversions <= T.leak.maxConversions) verdict = "漏斗漏水：流量好看但没人询价";
     else if (c.conversions >= T.gold.minConversions && rate >= T.gold.minConversionRate) verdict = "金矿：照这个题材再写 3 篇";
     return { page: p, clicks: g.clicks, impressions: g.impressions, sessions: c.sessions, conversions: c.conversions, conversionRate: rate, verdict };
-  }).sort((a, b) => b.conversions - a.conversions || b.clicks - a.clicks);
+  }).sort((a, b) => (b.conversions ?? -1) - (a.conversions ?? -1) || b.clicks - a.clicks);
 
   // ---------- 第 7 步：内链轮换建议 ----------
-  const donor = funnel.filter((f) => f.clicks > 0 && f.page !== "/").sort((a, b) => b.clicks - a.clicks)[0];
-  const stuck = [...new Set(flags.almost_there.map((f) => f.page))].filter((p) => p !== donor?.page);
-  const internalLinks = donor && stuck.length
-    ? { from: donor.page, to: stuck[0], note: "本月从流量最高的页链到这个卡住的页；排名稳定后换下一个" }
-    : null;
+  // 只给候选：哪一对真正相关要由人（或 Claude）判断，别把不相关的页硬链在一起
+  const donors = funnel.filter((f) => f.clicks > 0 && f.page !== "/").sort((a, b) => b.clicks - a.clicks).slice(0, 3).map((f) => f.page);
+  const stuck = [...new Set(flags.almost_there.map((f) => f.page))].filter((p) => !donors.includes(p));
+  const internalLinks = donors.length && stuck.length ? { donors, stuck } : null;
 
   const report = { generatedAt: new Date().toISOString(), source: flag("api") ? "search_console_api" : dir, flags, funnel, internalLinks };
-  fs.writeFileSync(path.join(dir, "report.json"), JSON.stringify(report, null, 2));
-  fs.writeFileSync(path.join(dir, "report.md"), toMarkdown(report));
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.writeFileSync(path.join(outDir, "report.json"), JSON.stringify(report, null, 2));
+  fs.writeFileSync(path.join(outDir, "report.md"), toMarkdown(report));
   console.log(toMarkdown(report));
-  console.error(`\n已写入 ${path.join(dir, "report.md")} 和 report.json`);
+  console.error(`\n已写入 ${path.join(outDir, "report.md")} 和 report.json`);
 }
 
 // ---------- 报告 ----------
@@ -263,7 +287,8 @@ function toMarkdown(r) {
   out.push(`## 点击 × 询价（最重要的一步）`, ``);
   out.push(`| 页面 | 点击 | 会话 | 询价 | 转化率 | 判断 |`, `| --- | ---: | ---: | ---: | ---: | --- |`);
   for (const f of r.funnel) {
-    out.push(`| ${esc(f.page)} | ${f.clicks} | ${f.sessions} | ${f.conversions} | ${pct(f.conversionRate)} | ${f.verdict} |`);
+    const na = f.sessions === null;
+    out.push(`| ${esc(f.page)} | ${f.clicks} | ${na ? "—" : f.sessions} | ${na ? "—" : f.conversions} | ${na ? "—" : pct(f.conversionRate)} | ${f.verdict} |`);
   }
   out.push(``);
 
@@ -283,7 +308,9 @@ function toMarkdown(r) {
   }
 
   out.push(`## 内链轮换`, ``);
-  out.push(r.internalLinks ? `${r.internalLinks.from} → ${r.internalLinks.to}：${r.internalLinks.note}` : `暂无建议`, ``);
+  out.push(r.internalLinks
+    ? `可以分出权重的页：${r.internalLinks.donors.join("、")}\n\n卡在 3–20 名的页：${r.internalLinks.stuck.join("、")}\n\n从中挑一对**主题真正相关**的，本月链一次；排名稳定后换下一个。`
+    : `暂无建议`, ``);
   return out.join("\n");
 }
 

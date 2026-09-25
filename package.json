@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "pdf": "node build_pdf.mjs",
-    "seo": "node seo-loop/seo-loop.mjs",
-    "seo:sample": "node seo-loop/seo-loop.mjs --sample"
+    "seo": "node skills/ruilong-seo-loop/scripts/seo-loop.mjs",
+    "seo:sample": "node skills/ruilong-seo-loop/scripts/seo-loop.mjs --sample --out ./seo-report"
   },
   "dependencies": {
     "jsdom": "^29.1.1"

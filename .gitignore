@@ -1,5 +1,6 @@
 node_modules/
 .quote.print.html
-seo-loop/**/report.md
-seo-loop/**/report.json
+seo-report/
+**/report.md
+**/report.json
 *.service-account.json

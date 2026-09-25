@@ -41,3 +41,26 @@ npm run pdf            # 生成 quote.pdf
 
 所有内容都集中在 `quote.html` 顶部的 `QUOTE_DATA` 一个对象里：旅行社抬头、报价编号/有效期、
 酒店信息与图片、入住日期、房型与价格、费用包含/不含、条款、联系方式。改完保存即可。
+
+---
+
+# SEO 每日循环技能 · `skills/ruilong-seo-loop/`
+
+读 Google Search Console → 按 6 个标记找机会 → 把每页的点击和询价对在一起 → 输出一份很短的 SEO 待办。
+这是一个 Claude 技能（Skill），安装后直接对 Claude 说「帮我看看这周 SEO 该做什么」并上传导出的表格即可。
+
+| 文件 | 用途 |
+| --- | --- |
+| `SKILL.md` | 技能说明：何时触发、工作流程、待办输出格式 |
+| `references/playbook.md` | 每个标记的判断细则（修还是写、页面类型、毙词、内链轮换……） |
+| `references/setup.md` | 搭建：落地页询价追踪、数据导出、Search Console API、重定向、Bing/IndexNow、每日自动跑 |
+| `scripts/seo-loop.mjs` | 零依赖分析脚本（Node 18+） |
+| `scripts/landing-tracker.js` | 放到网站上的「首次落地页 → 询价」追踪代码 |
+
+命令行也能直接用：
+
+```bash
+npm run seo:sample                 # 用示例数据生成 seo-report/report.md
+npm run seo -- --dir ./data        # 用你导出的 CSV
+GSC_SERVICE_ACCOUNT=key.json npm run seo -- --api --dir ./data
+```
