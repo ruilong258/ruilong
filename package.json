@@ -4,7 +4,9 @@
   "description": "酒店图片报价单模板（HTML 网页 + 一键导出 PDF）",
   "type": "module",
   "scripts": {
-    "pdf": "node build_pdf.mjs"
+    "pdf": "node build_pdf.mjs",
+    "seo": "node skills/ruilong-seo-loop/scripts/seo-loop.mjs",
+    "seo:sample": "node skills/ruilong-seo-loop/scripts/seo-loop.mjs --sample --out ./seo-report"
   },
   "dependencies": {
     "jsdom": "^29.1.1"

@@ -1,2 +1,6 @@
 node_modules/
 .quote.print.html
+seo-report/
+**/report.md
+**/report.json
+*.service-account.json
