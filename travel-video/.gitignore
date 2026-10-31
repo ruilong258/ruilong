@@ -1,0 +1,8 @@
+node_modules/
+raw/
+public/clips/
+public/photos/
+public/music.wav
+out/*
+!out/gradara_travel.mp4
+!out/cover.jpg

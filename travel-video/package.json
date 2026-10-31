@@ -1,0 +1,23 @@
+{
+  "name": "gradara-travel-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gradara 万圣节旅行短片（Remotion 竖屏 30s）",
+  "scripts": {
+    "prep": "python3 scripts/prep_clips.py raw",
+    "music": "python3 scripts/make_music.py",
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts GradaraTrip out/master.mp4 --concurrency=4 --audio-bitrate=320k && ffmpeg -y -v error -i out/master.mp4 -c:v libx264 -preset slow -crf 21 -maxrate 14M -bufsize 28M -pix_fmt yuv420p -c:a copy -movflags +faststart out/gradara_travel.mp4"
+  },
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/noto-serif-sc": "^5.3.1",
+    "@remotion/cli": "^4.0.539",
+    "@types/react": "^18.3.12",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.539",
+    "typescript": "^5.6.3"
+  }
+}
