@@ -244,7 +244,7 @@ export const Titles: React.FC = () => {
 
       {/* 片尾 */}
       {eT.visible && (
-        <Center top={700}>
+        <Center top={BRAND.show ? 700 : 790}>
           <div style={eT.style}>
             <Tracked spacing="0.26em" style={{ fontFamily: SERIF, fontWeight: 300, fontSize: 132, lineHeight: 1 }}>
               GRADARA

@@ -19,7 +19,7 @@
 | 26.0–32.7s | 天使翅膀（IMG_6918，0.6×）→ 长发“贞子”（IMG_6921）→ 无头人（IMG_6933）→ 修女（IMG_6935） | `16:38 THE SHOW · 演出` |
 | 32.7–34.7s | 火舞表演（照片，推向表演者） | 闪白转场 |
 | 34.7–37.3s | 黄昏钟楼与紫烟（IMG_6936，0.5× 慢动作） | `16:58 DUSK · 黄昏` · 有些地方 / 本身就是童话 |
-| 37.3–40.0s | 片尾 | 背景虚化压暗 · GRADARA / ITALIA · 31.10.2026 / RUILONG TRAVEL 瑞龙旅行 |
+| 37.3–40.0s | 片尾 | 背景虚化压暗 · GRADARA / ITALIA · 31.10.2026 |
 
 “高级感”的做法：iPhone HDR（HLG）统一转 SDR 后做同一套调色（低饱和、提黑、暖高光冷阴影），
 60fps 素材做 0.5–0.85× 慢动作，衬线字体（Cormorant Garamond + 思源宋体）+ 大字距，
@@ -72,6 +72,6 @@ npm run render    # 输出 out/gradara_travel.mp4
 
 - **换镜头 / 改入点 / 改时长**：改 `timeline.json`（`in` 入点秒数、`speed` 速度、`beats` 拍数），然后 `npm run prep`。总拍数要等于 `totalBeats`（60 拍 = 40 秒）。
 - **改字幕 / 时间戳**：`src/Titles.tsx`；路线图上的文字在 `src/map/RouteMap.tsx`。
-- **去掉片尾品牌**：`src/config.ts` 里 `show: false`。
+- **片尾品牌落款**：默认关闭；需要时把 `src/config.ts` 里的 `show` 改成 `true`。
 - **换成自己的音乐**：替换 `public/music.wav`（建议 90 BPM，剪切点会和节拍对齐）。
 - 在没有自带 Chrome 的环境渲染，可设 `REMOTION_BROWSER=/path/to/chrome-headless-shell`。
