@@ -8,7 +8,7 @@
 - photos get the same grade so stills and video match
 
 Usage: python3 scripts/prep_clips.py <raw_dir>
-<raw_dir> holds IMG_68xx.mov plus gate.jpg / scarecrow.jpg / courtyard.jpg
+<raw_dir> holds the IMG_68xx / IMG_69xx .mov files plus the photos named in timeline.json
 """
 import json, subprocess, sys
 from pathlib import Path
@@ -36,13 +36,15 @@ def run(cmd):
 
 
 for shot in TL["shots"]:
+    if shot["kind"] == "map":  # 路线图在 Remotion 里用矢量绘制
+        continue
     src = RAW / shot["raw"]
     if shot["kind"] == "photo":
         out = ROOT / "public/photos" / f"{shot['id']}.jpg"
         run(["ffmpeg", "-v", "error", "-y", "-i", str(src),
-             "-vf", f"format=yuv444p,{GRADE}", "-q:v", "2", str(out)])
+             "-vf", f"format=yuv444p,eq=saturation=0.92,{GRADE}", "-q:v", "2", str(out)])
         continue
-    frames = shot["beats"] * BEAT + shot["trans"]["frames"] + 12  # +margin
+    frames = shot["beats"] * BEAT + shot["trans"]["frames"] + shot.get("margin", 12)
     src_len = frames / FPS * shot["speed"] + 0.1
     out = ROOT / "public/clips" / f"{shot['id']}.mp4"
     vf = (

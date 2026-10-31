@@ -4,7 +4,7 @@ export type TransType = "cut" | "fade" | "flash" | "fadeFromBlack";
 
 export interface Shot {
   id: string;
-  kind: "video" | "photo";
+  kind: "video" | "photo" | "map";
   beats: number;
   trans: { type: TransType; frames: number };
 }
@@ -12,8 +12,8 @@ export interface Shot {
 export const FPS = tl.fps;
 export const WIDTH = tl.width;
 export const HEIGHT = tl.height;
-export const BEAT = tl.beatFrames; // 18 帧 = 100 BPM 的一拍
-export const TOTAL_FRAMES = tl.totalBeats * BEAT; // 50 拍 = 900 帧 = 30 秒
+export const BEAT = tl.beatFrames; // 20 帧 = 90 BPM 的一拍
+export const TOTAL_FRAMES = tl.totalBeats * BEAT; // 60 拍 = 1200 帧 = 40 秒
 
 export interface PlacedShot extends Shot {
   cut: number; // 这一镜在节拍上“落地”的帧

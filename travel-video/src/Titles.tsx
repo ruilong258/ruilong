@@ -1,6 +1,6 @@
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { BRAND } from "./config";
-import { shotById, TOTAL_FRAMES } from "./timeline";
+import { BEAT, shotById, TOTAL_FRAMES } from "./timeline";
 
 const SERIF = '"Cormorant Garamond", "Noto Serif SC", serif';
 const SANS = 'Inter, "Noto Serif SC", sans-serif';
@@ -62,41 +62,70 @@ const Center: React.FC<{ top: number; children: React.ReactNode }> = ({ top, chi
   </div>
 );
 
+/** 左上角的时间戳小标签：像旅行日记一样串起一天 */
+const TimeTag: React.FC<{ f: number; start: number; end: number; time: string; label: string }> = ({
+  f,
+  start,
+  end,
+  time,
+  label,
+}) => {
+  const r = reveal(f, start, end, 16, 10);
+  if (!r.visible) return null;
+  return (
+    <>
+      <AbsoluteFill
+        style={{
+          opacity: Number(r.style.opacity),
+          background:
+            "radial-gradient(ellipse 60% 16% at 22% 17%, rgba(10,8,6,0.55) 0%, rgba(10,8,6,0.25) 55%, rgba(10,8,6,0) 100%)",
+        }}
+      />
+      <div style={{ position: "absolute", left: 92, top: 250, color: IVORY, textShadow: SHADOW, ...r.style }}>
+        <div style={{ fontFamily: SERIF, fontWeight: 300, fontSize: 92, lineHeight: 1 }}>{time}</div>
+        <div style={{ width: 70, height: 1.5, background: GOLD, margin: "18px 0 16px" }} />
+        <div style={{ fontFamily: SANS, fontWeight: 300, fontSize: 21, letterSpacing: "0.42em", whiteSpace: "nowrap" }}>
+          {label}
+        </div>
+      </div>
+    </>
+  );
+};
+
 export const Titles: React.FC = () => {
   const f = useCurrentFrame();
   const bus = shotById("bus");
-  const arrive = shotById("arrive");
+  const map = shotById("map");
   const gate = shotById("gate");
   const smoke = shotById("smoke");
-  const court = shotById("courtyard");
-  const endCard = court.cut + 5 * 18; // 第 46 拍：片尾卡
+  const bubbles = shotById("bubbles");
+  const angel = shotById("angel");
+  const tower = shotById("tower");
+  const endOf = (s: ReturnType<typeof shotById>) => s.cut + s.beats * BEAT;
+  const endCard = tower.cut + 4 * BEAT; // 第 56 拍：片尾卡
 
   // ---------- 01 出发（大巴） ----------
-  const iEnd = arrive.cut - 6;
-  const iDate = reveal(f, bus.cut + 10, iEnd);
-  const iTitle = reveal(f, bus.cut + 22, iEnd, 24);
-  const iCn = reveal(f, bus.cut + 36, iEnd);
-  const iGeo = reveal(f, bus.cut + 50, iEnd);
-
-  // ---------- 抵达 ----------
-  const aIn = reveal(f, arrive.cut + 6, gate.cut - 2, 14, 10);
+  const iEnd = map.cut - 2;
+  const iDate = reveal(f, bus.cut + 8, iEnd);
+  const iTitle = reveal(f, bus.cut + 16, iEnd, 22);
+  const iCn = reveal(f, bus.cut + 28, iEnd);
 
   // ---------- 02 GRADARA ----------
-  const gEnd = gate.cut + gate.beats * 18 - 4;
+  const gEnd = endOf(gate) - 4;
   const gSub = reveal(f, gate.cut + 34, gEnd);
   const gCn = reveal(f, gate.cut + 44, gEnd);
   const letters = "GRADARA".split("");
 
   // ---------- 03 万圣节 ----------
-  const sEnd = smoke.cut + smoke.beats * 18 - 2;
-  const sTitle = reveal(f, smoke.cut + 4, sEnd, 20, 10);
-  const sCn = reveal(f, smoke.cut + 16, sEnd, 18, 10);
+  const sEnd = endOf(smoke) - 2;
+  const sTitle = reveal(f, smoke.cut + 2, sEnd, 18, 10);
+  const sCn = reveal(f, smoke.cut + 12, sEnd, 16, 10);
 
-  // ---------- 庭院 · 金句 ----------
+  // ---------- 黄昏 · 金句 ----------
   const qEnd = endCard - 2;
-  const q1 = reveal(f, court.cut + 10, qEnd, 22, 14);
-  const q2 = reveal(f, court.cut + 22, qEnd, 22, 14);
-  const q3 = reveal(f, court.cut + 36, qEnd, 22, 14);
+  const q1 = reveal(f, tower.cut + 6, qEnd, 22, 14);
+  const q2 = reveal(f, tower.cut + 18, qEnd, 22, 14);
+  const q3 = reveal(f, tower.cut + 32, qEnd, 22, 14);
 
   // ---------- 片尾 ----------
   const eT = reveal(f, endCard + 2, TOTAL_FRAMES + 30, 24);
@@ -106,9 +135,9 @@ export const Titles: React.FC = () => {
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       {/* 01 出发 */}
-      {iDate.visible && <Scrim y="52%" opacity={Number(iDate.style.opacity)} h="34%" />}
+      {iDate.visible && <Scrim y="52%" opacity={Number(iDate.style.opacity)} h="30%" />}
       {iDate.visible && (
-        <Center top={760}>
+        <Center top={780}>
           <div style={iDate.style}>
             <Tracked spacing="0.5em" style={{ fontFamily: SANS, fontWeight: 300, fontSize: 26 }}>
               31 · 10 · 2026
@@ -120,51 +149,14 @@ export const Titles: React.FC = () => {
             </div>
           </div>
           <div style={{ marginTop: 34 }}>
-            <Line f={f} start={bus.cut + 30} end={iEnd} />
+            <Line f={f} start={bus.cut + 22} end={iEnd} />
           </div>
           <div style={{ ...iCn.style, marginTop: 34 }}>
             <Tracked spacing="0.38em" style={{ fontFamily: CN, fontSize: 38 }}>
               出发 · 去古堡过万圣节
             </Tracked>
           </div>
-          <div style={{ ...iGeo.style, marginTop: 200, opacity: Number(iGeo.style.opacity) * 0.85 }}>
-            <Tracked spacing="0.32em" style={{ fontFamily: SANS, fontWeight: 300, fontSize: 21 }}>
-              09:10 · 43.86°N 11.10°E
-            </Tracked>
-          </div>
         </Center>
-      )}
-
-      {/* 抵达 */}
-      {aIn.visible && (
-        <AbsoluteFill
-          style={{
-            opacity: Number(aIn.style.opacity),
-            background:
-              "radial-gradient(ellipse 70% 22% at 22% 68%, rgba(10,8,6,0.6) 0%, rgba(10,8,6,0.3) 50%, rgba(10,8,6,0) 100%)",
-          }}
-        />
-      )}
-      {aIn.visible && (
-        <div
-          style={{
-            position: "absolute",
-            left: 92,
-            top: 1180,
-            color: IVORY,
-            textShadow: SHADOW,
-            ...aIn.style,
-          }}
-        >
-          <div style={{ fontFamily: SERIF, fontWeight: 300, fontSize: 132, lineHeight: 1 }}>12:25</div>
-          <div style={{ width: 90, height: 1.5, background: GOLD, margin: "22px 0 20px" }} />
-          <div style={{ fontFamily: SANS, fontWeight: 300, fontSize: 22, letterSpacing: "0.45em", whiteSpace: "nowrap" }}>
-            ARRIVED IN GRADARA
-          </div>
-          <div style={{ fontFamily: CN, fontSize: 32, letterSpacing: "0.4em", marginTop: 14, whiteSpace: "nowrap" }}>
-            抵达古堡
-          </div>
-        </div>
       )}
 
       {/* 02 GRADARA */}
@@ -178,14 +170,7 @@ export const Titles: React.FC = () => {
                 return (
                   <span
                     key={i}
-                    style={{
-                      ...r.style,
-                      display: "inline-block",
-                      fontFamily: SERIF,
-                      fontWeight: 300,
-                      lineHeight: 1,
-                      marginRight: "0.17em",
-                    }}
+                    style={{ ...r.style, display: "inline-block", fontFamily: SERIF, fontWeight: 300, lineHeight: 1, marginRight: "0.17em" }}
                   >
                     {ch}
                   </span>
@@ -228,11 +213,16 @@ export const Titles: React.FC = () => {
         </>
       )}
 
-      {/* 庭院金句 */}
+      {/* 时间戳 */}
+      <TimeTag f={f} start={bubbles.cut + 2} end={endOf(bubbles) + 30} time="15:44" label="AFTERNOON · 午后" />
+      <TimeTag f={f} start={angel.cut + 2} end={endOf(angel) - 2} time="16:38" label="THE SHOW · 演出" />
+      <TimeTag f={f} start={tower.cut + 4} end={endCard - 4} time="16:58" label="DUSK · 黄昏" />
+
+      {/* 黄昏金句 */}
       {q1.visible && (
         <>
-          <Scrim y="38%" opacity={Number(q1.style.opacity) * 0.9} h="26%" />
-          <Center top={590}>
+          <Scrim y="55%" opacity={Number(q1.style.opacity)} h="22%" k={1.2} />
+          <Center top={930}>
             <div style={q1.style}>
               <Tracked spacing="0.28em" style={{ fontFamily: CN, fontSize: 54, lineHeight: 1.6 }}>
                 有些地方

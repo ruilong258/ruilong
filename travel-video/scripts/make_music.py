@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Synthesise an original 30 s cinematic soundtrack (no samples, royalty-free).
+"""Synthesise an original 40 s cinematic soundtrack (no samples, royalty-free).
 
-100 BPM (1 beat = 0.6 s = 18 frames @30fps) so every cut lands on a beat:
-  beats  0-8   intro      : pad + sparse piano on the bus, riser into the drop
-  beat   8     drop       : impact + drums/bass start (arrival in Gradara)
-  beats  8-41  groove     : half-time kick, soft clap, hats, piano arpeggios
-  beats 41-46  breakdown  : drums out, pad + piano (castle courtyard)
-  beat   46    final chord: rings out under the end card
+90 BPM (1 beat = 0.667 s = 20 frames @30fps), 60 beats; every cut lands on a beat:
+  beats  0-4   intro      : pad + sparse piano (bus)
+  beats  4-12  route map  : clock ticks, plucks, heartbeat kick, riser
+  beat   12    drop       : impact, drums + bass in (arrival in Gradara)
+  beats 12-32  section A  : daytime Halloween
+  beats 32-52  section B  : afternoon shows, 16th shaker + octave piano
+  beats 52-56  breakdown  : drums out (clock tower at dusk)
+  beat   56    final chord: rings out under the end card
 Output: public/music.wav (44.1 kHz stereo)
 """
 import json
@@ -153,75 +155,101 @@ def downlifter():
     return n * np.minimum(1, t / 0.02) * 0.22
 
 
+def tick(vel=1.0):
+    """钟表般的轻敲（路线图段落）"""
+    t = np.arange(int(0.12 * SR)) / SR
+    s = np.sin(2 * np.pi * 2350 * t) * np.exp(-t / 0.012) + 0.4 * np.sin(2 * np.pi * 3900 * t) * np.exp(-t / 0.006)
+    return s * 0.16 * vel
+
+
+def pluck(note, vel=1.0):
+    t = np.arange(int(0.6 * SR)) / SR
+    f = midi(note)
+    s = sum((1 / k) * np.sin(2 * np.pi * f * k * t) * np.exp(-t / (0.22 / k)) for k in range(1, 5))
+    return s * np.minimum(1, t / 0.003) * 0.13 * vel
+
+
 # ---------- harmony ----------
-# A minor, cinematic: chord per bar (4 beats); bar index -> (root midi, chord tones)
+# A 小调；每小节 4 拍一个和弦
 CH = {
     "Am": (45, [57, 60, 64, 71]), "F": (41, [53, 57, 60, 67]),
     "C": (48, [55, 60, 64, 67]), "G": (43, [55, 59, 62, 69]),
     "Dm": (38, [57, 62, 65, 69]), "E": (40, [56, 59, 64, 71]),
 }
-BARS = ["Am", "F", "Am", "F", "C", "G", "Am", "F", "Dm", "E", "F", "G"]  # bars 0..11 (beats 0..48)
+# bar:  0    1    2    3     4    5    6    7     8    9    10   11    12   13   14
+BARS = ["Am", "F", "E", "Am", "F", "C", "G", "Am", "F", "C", "G", "Dm", "E", "F", "Am"]
+DROP, SEC_B, BREAK, FINAL, END = 12, 32, 52, 56, TL["totalBeats"]
 
-# pad under everything
+# pad
 for b, name in enumerate(BARS):
     root, tones = CH[name]
-    beat0 = b * 4
-    length = 4 if b < 11 else 2
-    add(pad(tones, length * BEAT + 0.9), beat0, gain=0.9, pan=0, rev=0.35)
-# final chord (beat 46) Am(add9)
-add(pad([57, 60, 64, 71, 76], 4 * BEAT + 1.0), 46, gain=1.0, rev=0.5)
+    add(pad(tones, 4 * BEAT + 0.9), b * 4, gain=0.85 if b < 13 else 1.0, rev=0.4)
+add(pad([57, 60, 64, 71, 76], (END - FINAL) * BEAT + 1.0), FINAL, gain=0.9, rev=0.5)
 
 # piano
-ARP = [0, 2, 1, 3, 2, 1, 3, 2]  # index into upper tones, 8th notes
+ARP = [0, 2, 1, 3, 2, 1, 3, 2]
 for b, name in enumerate(BARS):
     root, tones = CH[name]
     upper = [n + 12 for n in tones]
-    beat0 = b * 4
-    if b < 2:  # intro: sparse quarter notes, gentle
+    b0 = b * 4
+    if b0 < 4:  # 大巴：稀疏四分音符
         for q in range(4):
-            note = upper[[0, 2, 1, 3][q]]
-            add(piano(note, 2.4, 0.75 if q else 0.95), beat0 + q, pan=-0.25 + 0.15 * q, rev=0.45)
-        add(piano(root + 12, 3.0, 0.7), beat0, pan=-0.1, rev=0.4)
-    elif b < 10:  # groove: 8th-note arpeggio
+            add(piano(upper[[0, 2, 1, 3][q]], 2.6, 0.95 if q == 0 else 0.72), b0 + q, pan=-0.25 + 0.15 * q, rev=0.45)
+        add(piano(root + 12, 3.2, 0.7), b0, pan=-0.1, rev=0.4)
+    elif b0 < DROP:  # 路线图：八分音符 + 拨弦十六分，逐渐打开
         for e in range(8):
-            if beat0 + e * 0.5 >= 41:
-                break
+            add(piano(upper[ARP[e]], 1.6, 0.55 + 0.04 * e), b0 + e * 0.5, pan=0.3 * np.sin(e), rev=0.35)
+        add(piano(root + 12, 2.6, 0.6), b0, pan=-0.2, rev=0.35)
+    elif b0 < BREAK:  # 主段
+        for e in range(8):
             vel = 0.85 if e % 2 == 0 else 0.6
-            add(piano(upper[ARP[e]], 1.6, vel), beat0 + e * 0.5, pan=0.3 * np.sin(e), rev=0.3)
-        add(piano(root + 12, 2.4, 0.6), beat0, pan=-0.2, rev=0.3)
-    else:  # breakdown: long single notes
-        for q in (0, 2):
-            if beat0 + q < 46:
-                add(piano(upper[[3, 1][q // 2]], 2.4, 0.7), beat0 + q, pan=0.2, rev=0.55)
-# final piano chord
+            add(piano(upper[ARP[e]], 1.6, vel), b0 + e * 0.5, pan=0.3 * np.sin(e), rev=0.3)
+            if b0 >= SEC_B and e % 2 == 1:  # B 段：高八度点缀
+                add(piano(upper[ARP[e]] + 12, 1.2, 0.35), b0 + e * 0.5, pan=0.45, rev=0.4)
+        add(piano(root + 12, 2.4, 0.6), b0, pan=-0.2, rev=0.3)
+    elif b0 < FINAL:  # 收：长音
+        for q, idx in ((0, 3), (2, 1)):
+            add(piano(upper[idx], 2.6, 0.7), b0 + q, pan=0.2, rev=0.55)
 for n, v in zip([57, 64, 69, 71, 76], [0.8, 0.6, 0.7, 0.5, 0.55]):
-    add(piano(n, 4.0, v), 46, rev=0.6)
-add(piano(33, 4.0, 0.6), 46, rev=0.4)
+    add(piano(n, 4.5, v), FINAL, rev=0.6)
+add(piano(33, 4.5, 0.6), FINAL, rev=0.4)
 
-# riser into the drop + impacts
-add(riser(4), 4, gain=1.0, rev=0.3)
-add(impact(), 8, gain=1.0, rev=0.35)
-add(impact(), 12, gain=0.45, rev=0.4)  # title accent on the castle gate
-add(downlifter(), 41, rev=0.4)
-add(impact(), 46, gain=0.5, rev=0.5)
+# 路线图段落：钟表滴答 + 拨弦 + 底鼓心跳
+for bt in np.arange(4, DROP, 0.5):
+    add(tick(1.0 if bt % 1 == 0 else 0.6), bt, pan=0.25 if bt % 1 else -0.25, rev=0.2)
+for bt in np.arange(4, DROP, 0.25):
+    bar = int(bt // 4)
+    tones = CH[BARS[bar]][1]
+    note = tones[int(bt * 4) % 4] + 24
+    add(pluck(note, 0.5 + 0.5 * (bt - 4) / (DROP - 4)), bt, pan=0.4 * np.sin(bt * 3), rev=0.3)
+for bt in range(8, DROP):
+    add(kick(), bt, gain=0.45 + 0.1 * (bt - 8))
 
-# drums + bass: beats 8..41 (half-time feel)
-for bar in range(2, 11):
+# 转场音效
+add(riser(4), DROP - 4, gain=1.0, rev=0.3)
+add(impact(), DROP, gain=1.0, rev=0.35)
+add(impact(), 15, gain=0.4, rev=0.4)  # GRADARA 标题
+add(impact(), SEC_B + 1, gain=0.35, rev=0.45)  # 下午段
+add(downlifter(), BREAK, rev=0.4)
+add(impact(), FINAL, gain=0.5, rev=0.5)
+
+# 鼓 + 贝斯（DROP..BREAK，半拍感）
+for bar in range(DROP // 4, BREAK // 4):
     b0 = bar * 4
-    for off in (0, 1.5, 2.75):  # kick pattern
-        if b0 + off < 40.9:
-            add(kick(), b0 + off, gain=0.9 if off == 0 else 0.7)
-    if b0 + 2 < 41:
-        add(clap(), b0 + 2, pan=0.05, rev=0.45)
+    for off in (0, 1.5, 2.75):
+        add(kick(), b0 + off, gain=0.9 if off == 0 else 0.7)
+    add(clap(), b0 + 2, pan=0.05, rev=0.45)
     for e in range(8):
-        bt = b0 + e * 0.5
-        if bt >= 41:
-            break
-        add(hat(open_=(e == 7)), bt, gain=0.55 if e % 2 == 0 else 1.0, pan=0.35)
+        add(hat(open_=(e == 7)), b0 + e * 0.5, gain=0.55 if e % 2 == 0 else 1.0, pan=0.35)
+    if b0 >= SEC_B:  # B 段：十六分沙锤
+        for s16 in range(16):
+            add(hat() * 0.5, b0 + s16 * 0.25, gain=0.5 if s16 % 2 else 0.25, pan=-0.35)
     root = CH[BARS[bar]][0]
     for off, ln in ((0, 1.4), (1.5, 1.2), (2.75, 1.2)):
-        if b0 + off < 40.9:
-            add(bass(root, ln * BEAT * 1.2), b0 + off, gain=0.75)
+        add(bass(root, ln * BEAT * 1.2), b0 + off, gain=0.75)
+# 最后一小节鼓的小加花
+for off in (3.0, 3.25, 3.5, 3.75):
+    add(clap() * 0.6, BREAK - 4 + off, pan=0.1, rev=0.4)
 
 # ---------- reverb ----------
 ir_len = int(2.6 * SR)
@@ -243,7 +271,7 @@ mix = hp(mix, 28)
 end = int(TOTAL * SR)
 mix = mix[:, :end]
 tt = np.arange(end) / SR
-fade = np.minimum(1, tt / 0.4) * np.minimum(1, (TOTAL - tt) / 1.6)
+fade = np.minimum(1, tt / 0.3) * np.minimum(1, (TOTAL - tt) / 1.4)
 mix *= fade
 mix = np.tanh(mix / np.abs(mix).max() * 1.15) / np.tanh(1.15)
 mix *= 10 ** (-1.5 / 20)

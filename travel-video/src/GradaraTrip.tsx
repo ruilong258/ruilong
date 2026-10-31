@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AbsoluteFill, Audio, Sequence, continueRender, delayRender, staticFile } from "remotion";
 import { ShotLayer } from "./Media";
 import { FadeBlack, Flash, Grain, Vignette } from "./Overlays";
-import { SHOTS, TOTAL_FRAMES } from "./timeline";
+import { BEAT, SHOTS, TOTAL_FRAMES } from "./timeline";
 import { Titles } from "./Titles";
 
 const FONT_PROBES = [
@@ -11,7 +11,7 @@ const FONT_PROBES = [
   '300 30px "Inter"',
 ];
 const CN_PROBE = '400 40px "Noto Serif SC"';
-const CN_TEXT = "出发去古堡过万圣节抵达意大利最美小镇有些地方本身就是童话瑞龙旅行·";
+const CN_TEXT = "出发去古堡过万圣节抵达意大利最美小镇有些地方本身就是童话瑞龙旅行午后演出黄昏行程托斯卡纳马尔凯翻越亚平宁奔向亚得里亚海·→";
 
 export const GradaraTrip: React.FC = () => {
   // 字体加载完成前不截帧，避免首帧出现回退字体
@@ -28,13 +28,14 @@ export const GradaraTrip: React.FC = () => {
   }, [handle]);
 
   const last = SHOTS[SHOTS.length - 1];
-  const endCardLocal = 5 * 18 + (last.trans.type === "fade" ? last.trans.frames : 0);
+  // 片尾卡从最后一镜的第 4 拍开始（背景虚化压暗）
+  const endCardLocal = 4 * BEAT + (last.trans.type === "fade" ? last.trans.frames : 0);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
       {SHOTS.map((s) => (
         <Sequence key={s.id} from={s.from} durationInFrames={s.duration} name={s.id}>
-          <ShotLayer shot={s} endCardFrom={s.id === "courtyard" ? endCardLocal : undefined} />
+          <ShotLayer shot={s} endCardFrom={s.id === last.id ? endCardLocal : undefined} />
         </Sequence>
       ))}
 

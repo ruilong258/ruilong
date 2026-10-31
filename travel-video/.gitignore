@@ -1,5 +1,6 @@
 node_modules/
 raw/
+data/cache/
 public/clips/
 public/photos/
 public/music.wav
